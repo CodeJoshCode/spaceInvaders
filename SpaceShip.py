@@ -5,9 +5,11 @@ import time
 
 
 height = 20
-width = 60
+width = 80
 left_buffer_x = 15
-bulletSpeed = 2
+bulletSpeed = 4
+invader_columns = 8
+invader_rows = 3
 
 class SpaceShip:
     """A spaceship is defined by position and graphic and hitpoints"""
@@ -35,6 +37,9 @@ class SpaceShip:
                             self.currentBullet.__del__
                             self.currentBullet = None
                             break
+
+                    if self.currentBullet == None:
+                        break
                 # add points to score on enemy destruction
                 if self.currentBullet != None:
                     self.currentBullet.show(win)
@@ -62,7 +67,12 @@ class SpaceShip:
         #SPACEBAR shoot 32
         if(key == 32 and self.currentBullet == None):
             self.currentBullet = Bullet(self.leftPos+1)
-
+    
+    def isCollision(self,yPos,xPos):
+        if yPos == (height-1) and (xPos == self.leftPos or xPos == self.leftPos + 1 or xPos == self.leftPos +2):
+            return True
+        else:
+            return False
         #TODO: redo entire workflow. Bullets should be in charge of shooting themselves.
         # Perhaps somekind of drawing handler should handle redrawing after every event
         # collisions should result in the position being filled with asterisk * for explosion, hangs for a second or two
@@ -85,8 +95,9 @@ class Bullet:
         """show the bullet in the window"""
         # display bullet
         # -------------
-        win.addstr(self.yPos,self.xPos,"+")
-        win.refresh()
+        if self.yPos > 0:
+            win.addstr(self.yPos,self.xPos,"+")
+            win.refresh()
 
 
 class Invader:
@@ -134,27 +145,40 @@ def spaceMain(stdscr):
     spaceShip.show(win,invader_list) #show the space ship
 
     # create array of invaders
-    for x in range(11):
-        for y in range(6):
+    for x in range(invader_columns):
+        for y in range(invader_rows):
             invader_list.append(Invader(2*(y+1),(4*x)+left_buffer_x))
     # loop through and show invaders
     for invader in invader_list:
         invader.show1(win)
 
+    timekeeper = 0
+    right_direction = True
     key = ''
     while key != ord('q'):
+        timekeeper += 1
         key = win.getch()
         spaceShip.move(key)
         spaceShip.show(win, invader_list)
         for invader in invader_list:
+            
+            
             invader.show1(win)
+            if timekeeper % 25 == 0:
+                right_direction = not right_direction
+                invader.yPos += 1
         # loop through and show invaders
         # check for loss via spaceship collision
         # check for win via elimination of enemy array
         time.sleep(.1)
         for invader in invader_list:
             invader.show2(win)
+            if spaceShip.isCollision(invader.yPos,invader.xPos):
+                win.erase()
+                win.addstr(10, 10, " *  You LOSE *")
+                time.sleep(10)
         time.sleep(.1)
+
 
 if __name__ == '__main__':
     # Initialize curses
